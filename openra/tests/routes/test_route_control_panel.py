@@ -106,7 +106,7 @@ class TestRouteControlPanel(TestRouteBase):
         self.assert_contains(
             view,
             [
-                '/panel/page/2/'
+                '?page=2'
             ]
         )
 
@@ -125,6 +125,11 @@ class TestRouteControlPanel(TestRouteBase):
                     map.title,
                 ]
             )
+
+    def test_route_panel_page_query_param(self):
+        """Panel accepts ?page=N query parameter"""
+        response = self.get_authed(route='/panel/?page=1')
+        self.assertEqual(200, response.status_code)
 
     def test_route_can_show_later_pages(self):
         user = UserFactory()
@@ -150,14 +155,14 @@ class TestRouteControlPanel(TestRouteBase):
             shown.append(map)
 
         view = self.get_authed(
-            route='/panel/page/2/',
+            route='/panel/?page=2',
             user=user,
         )
 
         self.assert_contains(
             view,
             [
-                '/panel/page/1/'
+                '?page=1'
             ]
         )
 

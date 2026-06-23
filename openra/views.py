@@ -7,7 +7,6 @@ import random
 import json
 import cgi
 import base64
-from urllib.parse import urlencode
 import urllib.request
 from dependency_injector.wiring import Provide, inject
 # from dependency_injector.wiring import Provide, inject
@@ -20,7 +19,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, Http404
 from django.utils import timezone
 
-from django.db.models import F
+from django.db.models import Q, F
 from django.contrib.auth.models import User
 from allauth.socialaccount.models import SocialAccount
 from openra import content, handlers, misc
@@ -158,28 +157,32 @@ def ControlPanel(request, page=1):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
 
-    perPage = 20
-    slice_start = perPage * int(page) - perPage
-    slice_end = perPage * int(page)
-    mapObject = Maps.objects.filter(user_id=request.user.id).filter(next_rev=0).order_by('-posted')
-    amount = mapObject.count()
-    rowsRange = int(math.ceil(amount / float(perPage)))   # amount of rows
-    mapObject = mapObject[slice_start:slice_end]
-    if len(mapObject) == 0 and int(page) != 1:
-        return HttpResponseRedirect("/panel/")
+    page = int(request.GET.get('page', page))
 
-    comments = misc.count_comments_for_many(mapObject)
+    base_query = Maps.objects.filter(user=request.user)
+    maps_query, filter_prepare, selected_filter = misc.map_filter(request, base_query)
+
+    pagination = Pagination(maps_query, 20)
+    maps_query = pagination.get_page(page)
+
+    if len(maps_query) == 0 and page != 1:
+        qs = re.sub(r'page=\d+&?', '', request.META['QUERY_STRING'])
+        return HttpResponseRedirect('/panel/?' + qs if qs else '/panel/')
+
+    comments = misc.count_comments_for_many(maps_query)
 
     template = loader.get_template('index.html')
     template_args = {
         'content': 'control_panel.html',
         'request': request,
         'title': content.titles['panel'],
-        'maps': mapObject,
-        'page': int(page),
-        'range': [i + 1 for i in range(rowsRange)],
-        'amount_maps': amount,
+        'maps': maps_query,
+        'page': page,
+        'amount': pagination.total,
         'comments': comments,
+        'filter_prepare': filter_prepare,
+        'selected_filter': selected_filter,
+        'pagination': pagination.get_links(page, request.META['QUERY_STRING']),
     }
     return HttpResponse(template.render(template_args, request))
 

@@ -1,6 +1,12 @@
 {% load customTags %}
+{% include 'filter_form.html' %}
+
+<div class='cBlock no-pd-bot map-grid-header-info'>
+	<h3>Found {{ amount }} maps{% if page > 1 %} ( page {{page}} ){% endif %}</h3>
+</div>
+
 <div id="panel_content">
-	{% if amount_maps != 0 %}
+	{% if amount != 0 %}
 		<div id="map_grid">
 			{% for item in maps %}
 			<div class="map_grid_cell">
@@ -45,26 +51,8 @@
 			{% endfor %}
 		</div>
 		<div class="clear"></div>
-		{% if 2 in range %}
-			<div id="paging">
-				{% for i in range %}
-				<div class="paging_cell">
-					{% if i <= 3 or i >= range|length|add:"-2" or i < page|add:"3" and i > page|add:"-3" or i == 4 and page == 7 or i == range|length|add:"-3" and page == range|length|add:"-6" %}
-					{% if page == i %}
-					<span>{{ i }}</span>
-					{% else %}
-					<a href="/panel/page/{{i}}/">{{ i }}</a>
-					{% endif %}
-					{% else %}
-					{% if i < page %}
-					<span class='no-page-before hide_block'>...</span>
-					{% else %}
-					<span class='no-page-after hide_block'>...</span>
-					{% endif %}
-					{% endif %}
-				</div>
-				{% endfor %}
-			</div>
-		{% endif %}
+		{% if pagination %}
+		  {% include 'pagination.html' %}
+        {% endif %}
 	{% endif %}
 </div>

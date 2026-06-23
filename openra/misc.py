@@ -295,6 +295,9 @@ def map_filter(request, maps_query):
     selected_filter['only_lua'] = request.GET.get('only_lua', None)
     selected_filter['with_duplicates'] = request.GET.get('with_duplicates', None)
     selected_filter['outdated'] = request.GET.get('outdated', None)
+    selected_filter['search'] = request.GET.get('search', '')[:100].strip()
+    selected_filter['author'] = request.GET.get('author', '')[:100].strip()
+    selected_filter['uploader'] = request.GET.get('uploader', '')[:100].strip()
 
     ####################
     ####################
@@ -353,6 +356,24 @@ def map_filter(request, maps_query):
     if selected_filter['outdated'] == 'on':
         latest_official_parser = settings.OPENRA_VERSIONS[0]
         maps_query = maps_query.filter(next_rev=0).exclude(parser=latest_official_parser)
+
+    # keyword search via header search box
+    if selected_filter['search']:
+        q = selected_filter['search']
+        maps_query = maps_query.filter(
+            Q(map_hash=q) |
+            Q(title__icontains=q) |
+            Q(info__icontains=q) |
+            Q(description__icontains=q)
+        )
+
+    # author filter
+    if selected_filter['author']:
+        maps_query = maps_query.filter(author__icontains=selected_filter['author'])
+
+    # uploader filter (by username)
+    if selected_filter['uploader']:
+        maps_query = maps_query.filter(user__username__icontains=selected_filter['uploader'])
 
     # filter options for maps with problems
     if selected_filter['with_problems'] and selected_filter['with_problems'] != 'show':
